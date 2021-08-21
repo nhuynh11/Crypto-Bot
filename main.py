@@ -1,5 +1,6 @@
 import os
 import discord
+from discord.ext import commands
 import requests
 import json
 import pandas as pd
@@ -8,7 +9,7 @@ import plotly.express as px
 
 FIGURE_1 = "images/fig1.png"
 
-client = discord.Client()
+bot = commands.Bot(command_prefix = "!", help_command=None)
 
 def get_simple_price_usd(coin):
   params = {}
@@ -20,7 +21,7 @@ def get_simple_price_usd(coin):
 
 def message_from_bot(message):
   # check if the message is from the bot
-  return True if message.author == client.user else False
+  return True if message.author == bot.user else False
 
 # functions for price, marketcap, and volume dfs
 def get_price_df_day(coin):
@@ -39,30 +40,33 @@ def save_image(fig):
   fig.write_image(FIGURE_1)
 
 # when the bot is initialized
-@client.event
+@bot.event
 async def on_ready():
-  print('We have logged in as {0.user}'.format(client))
+  print('We have logged in as {0.user}'.format(bot))
 
 # when the bot recieves a message return the usd price for the crypto asset
-@client.event
-async def on_message(message):
-  if message.content.startswith('$') and not message_from_bot(message):
-    coin = message.content[1:]
-    df = get_price_df_day(coin)
-    # print(df)
-    fig = px.line(df, x='time', y='price')
-    save_image(fig)
-    # TODO: get price of coin from last data point, so we don't have to make api call 2 times
-    embed = discord.Embed(
-      title = coin.upper(),
-      description = '$' + str(get_simple_price_usd(coin)),
-      color = discord.Color.blue()
-    )
-    file = discord.File(FIGURE_1, filename="image.png")
-    embed.set_image(url="attachment://image.png")
-    await message.channel.send(file=file, embed=embed)
+# seems like on_message doesn't play well with commands
+@bot.command()
+async def summary(ctx, coin):
+  df = get_price_df_day(coin)
+  # print(df)
+  fig = px.line(df, x='time', y='price')
+  save_image(fig)
+  # TODO: get price of coin from last data point, so we don't have to make api call 2 times
+  embed = discord.Embed(
+    title = coin.upper(),
+    description = '$' + str(get_simple_price_usd(coin)),
+    color = discord.Color.blue()
+  )
+  file = discord.File(FIGURE_1, filename="image.png")
+  embed.set_image(url="attachment://image.png")
+  await ctx.send(file=file, embed=embed)
 
-client.run(os.environ['TOKEN'])
+@bot.command()
+async def test(ctx):
+  print('test')
+
+bot.run(os.environ['TOKEN'])
 
 #TODO: help command
 #TODO: overall summary
@@ -70,3 +74,4 @@ client.run(os.environ['TOKEN'])
 #TODO: error handling
 #TODO: graph styling
 #TODOMaybe: candlestick
+#remember: pip install -U kaleido
