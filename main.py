@@ -24,20 +24,26 @@ def message_from_bot(message):
   return True if message.author == bot.user else False
 
 # functions for price, marketcap, and volume dfs
-def get_price_df_day(coin):
+def get_price_df_day(coin, days):
   params = {}
   params["vs_currency"] = "usd"
-  params["days"] = "1"
+  params["days"] = days
   url = 'https://api.coingecko.com/api/v3/coins/{0}/market_chart'.format(coin)
   response = requests.get(url,params=params)
   json_data = json.loads(response.text)
   df = pd.DataFrame(json_data["prices"], columns=['time','price'])
   return df
 
-def save_image(fig):
+def save_graph(fig):
   if not os.path.exists("images"):
     os.mkdir("images")
   fig.write_image(FIGURE_1)
+
+def create_graph(coin, days):
+  df = get_price_df_day(coin, days)
+  # print(df)
+  fig = px.line(df, x='time', y='price')
+  save_graph(fig)
 
 # when the bot is initialized
 @bot.event
@@ -48,14 +54,27 @@ async def on_ready():
 # seems like on_message doesn't play well with commands
 @bot.command()
 async def summary(ctx, coin):
-  df = get_price_df_day(coin)
-  # print(df)
-  fig = px.line(df, x='time', y='price')
-  save_image(fig)
+  create_graph(coin, 1)
   # TODO: get price of coin from last data point, so we don't have to make api call 2 times
   embed = discord.Embed(
     title = coin.upper(),
     description = '$' + str(get_simple_price_usd(coin)),
+    color = discord.Color.blue()
+  )
+  file = discord.File(FIGURE_1, filename="image.png")
+  embed.set_image(url="attachment://image.png")
+  await ctx.send(file=file, embed=embed)
+
+@bot.command()
+async def price(ctx, coin):
+  await ctx.send(get_simple_price_usd(coin))
+
+@bot.command()
+async def graph(ctx, coin, days):
+  create_graph(coin, days)
+  embed = discord.Embed(
+    title = coin.upper(),
+    description = 'Price Chart Over {}'.format(days) +' days.',
     color = discord.Color.blue()
   )
   file = discord.File(FIGURE_1, filename="image.png")
