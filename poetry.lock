@@ -82,6 +82,14 @@ optional = false
 python-versions = ">=3.5"
 
 [[package]]
+name = "kaleido"
+version = "0.2.1.post1"
+description = "Static image export for web-based visualization libraries with zero dependencies"
+category = "main"
+optional = false
+python-versions = "*"
+
+[[package]]
 name = "multidict"
 version = "5.1.0"
 description = "multidict implementation"
@@ -186,7 +194,7 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "7fe62859a2174b18dcc60c8493260893817c11e0c22fec08b4243965eb073972"
+content-hash = "fa9f6a3d9f078ec1986a8dc2c1453f70b06a642326a2c87bd27383b5ce2e35f8"
 
 [metadata.files]
 aiohttp = [
@@ -251,6 +259,9 @@ discord = [
 idna = [
     {file = "idna-3.2-py3-none-any.whl", hash = "sha256:14475042e284991034cb48e06f6851428fb14c4dc953acd9be9a5e95c7b6dd7a"},
     {file = "idna-3.2.tar.gz", hash = "sha256:467fbad99067910785144ce333826c71fb0e63a425657295239737f7ecd125f3"},
+]
+kaleido = [
+    {file = "kaleido-0.2.1.post1-py2.py3-none-manylinux2014_armv7l.whl", hash = "sha256:d313940896c24447fc12c74f60d46ea826195fc991f58569a6e73864d53e5c20"},
 ]
 multidict = [
     {file = "multidict-5.1.0-cp36-cp36m-macosx_10_14_x86_64.whl", hash = "sha256:b7993704f1a4b204e71debe6095150d43b2ee6150fa4f44d6d966ec356a8d61f"},
