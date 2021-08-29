@@ -4,13 +4,26 @@ from discord.ext import commands
 import requests
 import json
 import pandas as pd
-import numpy as np
+from datetime import datetime
 import plotly.express as px
-# import plotly.graph_objects as go
+from keep_alive import keep_alive
 
 FIGURE_1 = "images/fig1.png"
 
-bot = commands.Bot(command_prefix = "!", help_command=None)
+bot = commands.Bot(command_prefix = "!")
+
+# when the bot is initialized
+@bot.event
+async def on_ready():
+  print('We have logged in as {0.user}'.format(bot))
+
+@bot.event
+async def on_command_error(ctx, error):
+  if isinstance(error, commands.MissingRequiredArgument):
+    await ctx.send('Please provide all required arguments.')
+  else:
+    await ctx.send('Error processing request. Check server log for details.')
+
 # get current price
 def get_simple_price_usd(coin):
   params = {}
@@ -29,7 +42,7 @@ def get_price_df_day(coin, days):
   response = requests.get(url,params=params)
   json_data = json.loads(response.text)
   df = pd.DataFrame(json_data["prices"], columns=['time','price'])
-  df['time'] = np.asarray(df['time'], dtype='datetime64[ns]')
+  df['time'] = [datetime.utcfromtimestamp(ts/1000).strftime('%Y-%m-%d %H:%M:%S') for ts in df['time']]
   return df
 
 def get_volume_df_day(coin, days):
@@ -40,7 +53,7 @@ def get_volume_df_day(coin, days):
   response = requests.get(url,params=params)
   json_data = json.loads(response.text)
   df = pd.DataFrame(json_data["total_volumes"], columns=['time','volume'])
-  df['time'] = np.asarray(df['time'], dtype='datetime64[ns]')
+  df['time'] = [datetime.utcfromtimestamp(ts/1000).strftime('%Y-%m-%d %H:%M:%S') for ts in df['time']]
   return df
 
 def get_summary(coin):
@@ -62,24 +75,17 @@ def save_graph(fig):
 
 def create_price_graph(coin, days):
   df = get_price_df_day(coin, days)
-  # print(df)
   fig = px.line(df, x='time', y='price')
   save_graph(fig)
 
 def create_volume_graph(coin, days):
   df = get_volume_df_day(coin, days)
-  # print(df)
   fig = px.line(df, x='time', y='volume')
   save_graph(fig)
 
-# when the bot is initialized
-@bot.event
-async def on_ready():
-  print('We have logged in as {0.user}'.format(bot))
-
 # when the bot recieves a message return the usd price for the crypto asset
 # seems like on_message doesn't play well with commands
-@bot.command()
+@bot.command(brief='Returns a market summary.', description='Type the command with 1 argument <coin_name> to get the market summary details of the specified coin. Ex: !summary bitcoin')
 async def summary(ctx, coin):
   summary_data = get_summary(coin)
   create_price_graph(coin, 1)
@@ -98,44 +104,44 @@ async def summary(ctx, coin):
   embed.set_image(url="attachment://image.png")
   await ctx.send(file=file, embed=embed)
 
-@bot.command()
+@bot.command(brief='Returns the current price.', description='Type the command with 1 argument <coin_name> to get the current price. Ex: !price bitcoin')
 async def price(ctx, coin):
-  await ctx.send(get_simple_price_usd(coin))
+  await ctx.send('${:,.2f}'.format(get_simple_price_usd(coin)))
 
-@bot.command()
+@bot.command(brief='Returns a price graph.', description='Type the command with 2 arguments <coin_name> and <days> to get a price graph over the specified amount of days. Ex: !graph bitcoin 1')
 async def graph(ctx, coin, days):
   create_price_graph(coin, days)
   embed = discord.Embed(
     title = coin.upper(),
-    description = 'Price Chart Over {}'.format(days) +' days.',
+    description = 'Price chart over {}'.format(days) +' day(s).',
     color = discord.Color.blue()
   )
   file = discord.File(FIGURE_1, filename="image.png")
   embed.set_image(url="attachment://image.png")
   await ctx.send(file=file, embed=embed)
 
-@bot.command()
+@bot.command(brief='Returns a volume graph.', description='Type the command with 2 arguments <coin_name> and <days> to get a volume graph over the specified amount of days. Ex: !graph_volume bitcoin 1')
 async def graph_volume(ctx, coin, days):
   create_volume_graph(coin, days)
   embed = discord.Embed(
     title = coin.upper(),
-    description = 'Volume Chart Over {}'.format(days) +' days.',
+    description = 'Volume chart over {}'.format(days) +' day(s).',
     color = discord.Color.blue()
   )
   file = discord.File(FIGURE_1, filename="image.png")
   embed.set_image(url="attachment://image.png")
   await ctx.send(file=file, embed=embed)
 
-@bot.command()
-async def test(ctx):
-  print('test')
+# error handling for price command
+# @price.error
+# async def price_error(ctx, error):
+#   if isinstance(error, commands.MissingRequiredArgument):
+#     await ctx.send('Please provide all required arguments.')
+#   else:
+#     await ctx.send('Error processing request. Check server log for details.')
 
 bot.run(os.environ['TOKEN'])
 
-#TODO: help command
-#TODO: overall summary
-#TODO: timeframe
 #TODO: error handling
 #TODO: graph styling
 #TODOMaybe: candlestick
-#remember: pip install -U kaleido
