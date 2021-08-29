@@ -140,6 +140,8 @@ async def graph_volume(ctx, coin, days):
 #   else:
 #     await ctx.send('Error processing request. Check server log for details.')
 
+keep_alive()
+
 bot.run(os.environ['TOKEN'])
 
 #TODO: error handling
